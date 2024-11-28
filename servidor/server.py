@@ -30,13 +30,16 @@ def verify_hmac(message, received_hmac):
 def load_nicknames():
     if os.path.exists(nicknames_file):
         with open(nicknames_file, 'r') as file:
-            return json.load(file)
+            nicknames = json.load(file)
+            # Crear un diccionario con los nicknames como claves
+            return {nickname: None for nickname in nicknames}
     return {}
 
 # Guardar los nicknames en un archivo JSON
 def save_nicknames():
     with open(nicknames_file, 'w') as file:
         json.dump(list(clients.keys()), file)  # Solo guardamos los nicknames
+
 
 # Función para retransmitir mensajes a todos los clientes conectados
 def broadcast(message, sender_socket=None):
