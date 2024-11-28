@@ -1,2 +1,2 @@
 # Sockets
- Practica de sockets
+Sockets usando python de tipo Clientes - Servidor
