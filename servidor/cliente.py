@@ -4,6 +4,8 @@ import threading
 import hmac
 import hashlib
 import time
+import tkinter as tk
+import tkinter.simpledialog as simpledialog  # Importación correcta
 
 # Clave secreta compartida entre cliente y servidor para HMAC
 secret_key = b'supersecretkey123'
@@ -17,29 +19,37 @@ def verify_hmac(message, received_hmac):
     calculated_hmac = generate_hmac(message)
     return hmac.compare_digest(calculated_hmac, received_hmac)
 
-# Función para recibir mensajes del servidor
-def receive_messages(secure_client_socket):
+# Función para recibir mensajes del servidor y actualizar la interfaz
+def receive_messages(secure_client_socket, text_area, root):
     while True:
         try:
             data = secure_client_socket.recv(2048).decode('utf-8')
             if not data:
                 break
-            
+
             # Separar mensaje y HMAC recibido
             try:
                 message, received_hmac = data.rsplit('|', 1)
             except ValueError:
                 print("Mensaje recibido en un formato inválido.")
                 continue
-            
+
             # Verificar integridad del mensaje
             if verify_hmac(message, received_hmac):
-                print(message)
+                # Usamos after() para actualizar la GUI en el hilo principal
+                root.after(0, update_text_area, message, text_area)
             else:
                 print("Advertencia: Mensaje recibido con HMAC inválido. Podría estar corrupto.")
         except Exception as e:
             print(f"Error al recibir mensaje: {e}")
             break
+
+# Función para actualizar el área de texto con un nuevo mensaje
+def update_text_area(message, text_area):
+    text_area.config(state=tk.NORMAL)  # Permitir modificaciones en el área de texto
+    text_area.insert(tk.END, message + '\n')  # Insertar el mensaje
+    text_area.yview(tk.END)  # Desplazar hacia abajo
+    text_area.config(state=tk.DISABLED)  # Deshabilitar la edición
 
 # Función para intentar reconectar al servidor
 def reconnect_to_server():
@@ -65,34 +75,58 @@ def reconnect_to_server():
             print("Reintentando en 5 segundos...")
             time.sleep(5)
 
-# Función principal para iniciar el cliente
-def start_client():
-    secure_client_socket = reconnect_to_server()
-
-    # Enviar el nickname al servidor
-    nickname = input("Ingresa tu nickname: ")
-    secure_client_socket.send(nickname.encode('utf-8'))
-
-    # Iniciar un hilo para recibir mensajes
-    threading.Thread(target=receive_messages, args=(secure_client_socket,), daemon=True).start()
-
-    while True:
+# Función para manejar el evento de enviar un mensaje
+def send_message(event, secure_client_socket, entry_field, nickname, text_area):
+    message = entry_field.get()
+    if message.lower() == "salir":
+        secure_client_socket.close()
+        root.quit()
+    else:
         try:
-            message = input()
-            if message.lower() == "salir":
-                secure_client_socket.close()
-                break
-
-            # Generar HMAC para el mensaje
+            # Mostrar el mensaje localmente con el prefijo "Tu:" antes de enviarlo
+            update_text_area(f"Tu: {message}", text_area)
+            
             hmac_hash = generate_hmac(message)
-
-            # Enviar mensaje con HMAC
             secure_client_socket.send(f"{message}|{hmac_hash}".encode('utf-8'))
+            entry_field.delete(0, tk.END)  # Limpiar el campo de entrada
         except Exception as e:
             print(f"Error al enviar el mensaje: {e}")
             print("Intentando reconectar...")
             secure_client_socket.close()
             secure_client_socket = reconnect_to_server()
+
+# Función para iniciar el cliente
+def start_client():
+    secure_client_socket = reconnect_to_server()
+
+    # Iniciar una nueva ventana de Tkinter
+    global root
+    root = tk.Tk()
+
+    # Pedir el nickname al usuario
+    nickname = simpledialog.askstring("Nickname", "Ingresa tu nickname:")
+    if not nickname:
+        nickname = "Invitado"  # Default nickname
+
+    # Cambiar el título de la ventana a "Chat - [nickname]"
+    root.title(f"Chat - {nickname}")
+
+    # Crear una área de texto para mostrar los mensajes
+    text_area = tk.Text(root, height=15, width=50, state=tk.DISABLED)
+    text_area.pack(padx=10, pady=10)
+
+    # Crear un campo de entrada para escribir el mensaje
+    entry_field = tk.Entry(root, width=40)
+    entry_field.pack(padx=10, pady=10)
+    entry_field.bind("<Return>", lambda event: send_message(event, secure_client_socket, entry_field, nickname, text_area))
+
+    secure_client_socket.send(nickname.encode('utf-8'))
+
+    # Iniciar un hilo para recibir mensajes
+    threading.Thread(target=receive_messages, args=(secure_client_socket, text_area, root), daemon=True).start()
+
+    # Iniciar la interfaz gráfica de Tkinter
+    root.mainloop()
 
 if __name__ == "__main__":
     start_client()
