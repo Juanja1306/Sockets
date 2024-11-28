@@ -1,55 +1,14 @@
 import socket
-import ssl
 import threading
+import ssl
 import hmac
 import hashlib
-import time
 import tkinter as tk
-import tkinter.simpledialog as simpledialog  # Importación correcta
+from tkinter import simpledialog
+import time
 
 # Clave secreta compartida entre cliente y servidor para HMAC
 secret_key = b'supersecretkey123'
-
-# Función para generar un HMAC (hash con clave) de un mensaje
-def generate_hmac(message):
-    return hmac.new(secret_key, message.encode('utf-8'), hashlib.sha256).hexdigest()
-
-# Función para verificar la integridad de un mensaje usando HMAC
-def verify_hmac(message, received_hmac):
-    calculated_hmac = generate_hmac(message)
-    return hmac.compare_digest(calculated_hmac, received_hmac)
-
-# Función para recibir mensajes del servidor y actualizar la interfaz
-def receive_messages(secure_client_socket, text_area, root):
-    while True:
-        try:
-            data = secure_client_socket.recv(2048).decode('utf-8')
-            if not data:
-                break
-
-            # Separar mensaje y HMAC recibido
-            try:
-                message, received_hmac = data.rsplit('|', 1)
-            except ValueError:
-                print("Mensaje recibido en un formato inválido.")
-                continue
-
-            # Verificar integridad del mensaje
-            if verify_hmac(message, received_hmac):
-                # Usamos after() para actualizar la GUI en el hilo principal
-                root.after(0, update_text_area, message, text_area)
-            else:
-                print("Advertencia: Mensaje recibido con HMAC inválido. Podría estar corrupto.")
-        except Exception as e:
-            print(f"Error al recibir mensaje: {e}")
-            break
-
-# Función para actualizar el área de texto con un nuevo mensaje
-def update_text_area(message, text_area):
-    text_area.config(state=tk.NORMAL)  # Permitir modificaciones en el área de texto
-    text_area.insert(tk.END, message + '\n')  # Insertar el mensaje
-    text_area.yview(tk.END)  # Desplazar hacia abajo
-    text_area.config(state=tk.DISABLED)  # Deshabilitar la edición
 
 # Función para intentar reconectar al servidor
 def reconnect_to_server():
@@ -74,6 +33,62 @@ def reconnect_to_server():
             print(f"Error de conexión: {e}")
             print("Reintentando en 5 segundos...")
             time.sleep(5)
+
+# Función para generar un HMAC (hash con clave) de un mensaje
+def generate_hmac(message):
+    return hmac.new(secret_key, message.encode('utf-8'), hashlib.sha256).hexdigest()
+
+# Función para verificar la integridad de un mensaje usando HMAC
+def verify_hmac(message, received_hmac):
+    calculated_hmac = generate_hmac(message)
+    return hmac.compare_digest(calculated_hmac, received_hmac)
+
+# Función para recibir mensajes y actualizar la interfaz
+def receive_messages(secure_client_socket, text_area, root, client_listbox):
+    while True:
+        try:
+            data = secure_client_socket.recv(2048).decode('utf-8')
+            if not data:
+                break
+
+            try:
+                message, received_hmac = data.rsplit('|', 1)
+            except ValueError:
+                print("Mensaje recibido en un formato inválido.")
+                continue
+
+            if verify_hmac(message, received_hmac):
+                # Mostrar el mensaje en el área de texto
+                root.after(0, update_text_area, message, text_area)
+                # Si el mensaje contiene la lista de usuarios
+                if message.startswith("Lista de usuarios:"):
+                    # Actualizar la lista de clientes conectados
+                    root.after(0, update_client_list, message, client_listbox)
+            else:
+                print("Advertencia: Mensaje recibido con HMAC inválido.")
+        except Exception as e:
+            print(f"Error al recibir mensaje: {e}")
+            break
+
+# Función para actualizar el área de texto con un nuevo mensaje
+def update_text_area(message, text_area):
+    text_area.config(state=tk.NORMAL)
+    text_area.insert(tk.END, message + "\n")
+    text_area.config(state=tk.DISABLED)
+    text_area.yview(tk.END)
+
+# Función para actualizar la lista de clientes conectados
+def update_client_list(message, client_listbox):
+    # Extraemos los nombres de los usuarios de la cadena del mensaje
+    user_list = message.split(":")[1].strip()
+    user_list = eval(user_list)  # Convertir el string en una lista de usuarios
+
+    # Limpiar la lista de usuarios actual
+    client_listbox.delete(0, tk.END)
+
+    # Insertar los usuarios en el Listbox
+    for user in user_list:
+        client_listbox.insert(tk.END, user)
 
 # Función para manejar el evento de enviar un mensaje
 def send_message(event, secure_client_socket, entry_field, nickname, text_area):
@@ -120,10 +135,17 @@ def start_client():
     entry_field.pack(padx=10, pady=10)
     entry_field.bind("<Return>", lambda event: send_message(event, secure_client_socket, entry_field, nickname, text_area))
 
+    # Crear un Listbox para mostrar los clientes conectados
+    client_listbox_label = tk.Label(root, text="Clientes Conectados:")
+    client_listbox_label.pack(pady=5)
+    
+    client_listbox = tk.Listbox(root, height=10, width=20)
+    client_listbox.pack(padx=10, pady=10)
+
     secure_client_socket.send(nickname.encode('utf-8'))
 
     # Iniciar un hilo para recibir mensajes
-    threading.Thread(target=receive_messages, args=(secure_client_socket, text_area, root), daemon=True).start()
+    threading.Thread(target=receive_messages, args=(secure_client_socket, text_area, root, client_listbox), daemon=True).start()
 
     # Iniciar la interfaz gráfica de Tkinter
     root.mainloop()
