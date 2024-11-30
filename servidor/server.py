@@ -171,7 +171,9 @@ def start_server():
     #clients = load_nicknames()
 
     # Generar certificado y clave temporal
-    generate_temp_cert()
+    if not os.path.exists('temp_server.crt') or not os.path.exists('temp_server.key'):
+        generate_temp_cert()
+        print("Certificado y clave temporales generados.")
 
     # Crear contexto SSL
     context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
