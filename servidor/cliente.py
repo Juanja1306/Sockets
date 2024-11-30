@@ -9,9 +9,14 @@ import time
 
 # Clave secreta compartida entre cliente y servidor para HMAC
 secret_key = b'supersecretkey123'
+secure_client_socket: ssl.SSLSocket = None
+nickname: str = ""
 
 # Función para intentar reconectar al servidor
-def reconnect_to_server():
+def reconnect_to_server(add_message_callback: callable) -> None:
+    global nickname
+    global secure_client_socket
+    
     while True:
         try:
             print("Intentando conectar al servidor...")
@@ -28,7 +33,14 @@ def reconnect_to_server():
             secure_client_socket.connect((host, port))
 
             print("Conexión segura establecida con el servidor.")
-            return secure_client_socket
+            
+            secure_client_socket.send(nickname.encode('utf-8'))
+
+            # Iniciar un hilo para recibir mensajes
+            threading.Thread(target=receive_messages, args=(secure_client_socket, add_message_callback), daemon=True).start()
+            
+            return
+        
         except Exception as e:
             print(f"Error de conexión: {e}")
             print("Reintentando en 5 segundos...")
@@ -44,7 +56,7 @@ def verify_hmac(message, received_hmac):
     return hmac.compare_digest(calculated_hmac, received_hmac)
 
 # Función para recibir mensajes y actualizar la interfaz
-def receive_messages(secure_client_socket, text_area, root, client_listbox):
+def receive_messages(secure_client_socket, add_message_callback: callable):    
     while True:
         try:
             data = secure_client_socket.recv(2048).decode('utf-8')
@@ -59,15 +71,21 @@ def receive_messages(secure_client_socket, text_area, root, client_listbox):
 
             if verify_hmac(message, received_hmac):
                 # Mostrar el mensaje en el área de texto
-                root.after(0, update_text_area, message, text_area)
+                add_message_callback(message)
+                # root.after(0, update_text_area, message, text_area)
                 # Si el mensaje contiene la lista de usuarios
-                if message.startswith("Lista de usuarios:"):
+                # if message.startswith("Lista de usuarios:"):
                     # Actualizar la lista de clientes conectados
-                    root.after(0, update_client_list, message, client_listbox)
+                    # root.after(0, update_client_list, message, client_listbox)
             else:
                 print("Advertencia: Mensaje recibido con HMAC inválido.")
         except Exception as e:
             print(f"Error al recibir mensaje: {e}")
+            break
+        except (socket.error, ssl.SSLError) as e:
+            print(f"Error en la conexión: {e}")
+            secure_client_socket.close()
+            reconnect_to_server(add_message_callback)
             break
 
 # Función para actualizar el área de texto con un nuevo mensaje
@@ -91,7 +109,9 @@ def update_client_list(message, client_listbox):
         client_listbox.insert(tk.END, user)
 
 # Función para manejar el evento de enviar un mensaje
-def send_message(event, secure_client_socket, entry_field, nickname, text_area):
+def send_message(event, entry_field, text_area, add_message_callback: callable):
+    global secure_client_socket
+    
     message = entry_field.get()
     if message.lower() == "salir":
         secure_client_socket.close()
@@ -108,11 +128,13 @@ def send_message(event, secure_client_socket, entry_field, nickname, text_area):
             print(f"Error al enviar el mensaje: {e}")
             print("Intentando reconectar...")
             secure_client_socket.close()
-            secure_client_socket = reconnect_to_server()
+            reconnect_to_server(add_message_callback)
 
 # Función para iniciar el cliente
 def start_client():
-    secure_client_socket = reconnect_to_server()
+    # Cargar socket global
+    global secure_client_socket
+    global nickname
 
     # Iniciar una nueva ventana de Tkinter
     global root
@@ -130,22 +152,25 @@ def start_client():
     text_area = tk.Text(root, height=15, width=50, state=tk.DISABLED)
     text_area.pack(padx=10, pady=10)
 
-    # Crear un campo de entrada para escribir el mensaje
-    entry_field = tk.Entry(root, width=40)
-    entry_field.pack(padx=10, pady=10)
-    entry_field.bind("<Return>", lambda event: send_message(event, secure_client_socket, entry_field, nickname, text_area))
-
     # Crear un Listbox para mostrar los clientes conectados
     client_listbox_label = tk.Label(root, text="Clientes Conectados:")
     client_listbox_label.pack(pady=5)
     
     client_listbox = tk.Listbox(root, height=10, width=20)
     client_listbox.pack(padx=10, pady=10)
-
-    secure_client_socket.send(nickname.encode('utf-8'))
-
-    # Iniciar un hilo para recibir mensajes
-    threading.Thread(target=receive_messages, args=(secure_client_socket, text_area, root, client_listbox), daemon=True).start()
+    
+    def add_message(message: str):
+        root.after(0, update_text_area, message, text_area)
+        
+        if message.startswith("Lista de usuarios:"):
+            root.after(0, update_client_list, message, client_listbox)
+        
+    # Crear un campo de entrada para escribir el mensaje
+    entry_field = tk.Entry(root, width=40)
+    entry_field.pack(padx=10, pady=10)
+    entry_field.bind("<Return>", lambda event: send_message(event, entry_field, text_area, add_message))
+    
+    reconnect_to_server(add_message)
 
     # Iniciar la interfaz gráfica de Tkinter
     root.mainloop()

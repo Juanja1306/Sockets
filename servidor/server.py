@@ -70,7 +70,7 @@ def broadcast_user_list():
             #save_nicknames()
 
 # Función para manejar las conexiones de los clientes
-def handle_client(client_socket, client_address):
+def handle_client(client_socket: ssl.SSLSocket, client_address):
     try:
         nickname = client_socket.recv(1024).decode('utf-8')
 
@@ -100,6 +100,7 @@ def handle_client(client_socket, client_address):
                 broadcast(f"{nickname}: {message}", sender_socket=client_socket)
             else:
                 print(f"Mensaje corrupto recibido de {nickname}, descartando.")
+                
     except Exception as e:
         print(f"Error en la conexión con el cliente: {e}")
     finally:
@@ -189,6 +190,9 @@ def start_server():
             threading.Thread(target=handle_client, args=(secure_client_socket, addr), daemon=True).start()
         except Exception as e:
             print(f"Error al aceptar una nueva conexión: {e}")
+        """except KeyboardInterrupt:
+            print("Servidor detenido.")
+            break"""
 
 if __name__ == "__main__":
     start_server()
