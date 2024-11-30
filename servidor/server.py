@@ -4,7 +4,6 @@ import ssl
 import hmac
 import hashlib
 import os
-import json
 from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
@@ -27,19 +26,6 @@ def verify_hmac(message, received_hmac):
     return hmac.compare_digest(calculated_hmac, received_hmac)
 
 # Cargar nicknames desde un archivo JSON
-def load_nicknames():
-    if os.path.exists(nicknames_file):
-        with open(nicknames_file, 'r') as file:
-            nicknames = json.load(file)
-            # Crear un diccionario con los nicknames como claves
-            return {nickname: None for nickname in nicknames}
-    return {}
-
-# Guardar los nicknames en un archivo JSON
-def save_nicknames():
-    with open(nicknames_file, 'w') as file:
-        json.dump(list(clients.keys()), file)  # Solo guardamos los nicknames
-
 # Función para retransmitir mensajes a todos los clientes conectados
 def broadcast(message, sender_socket=None):
     for nickname, client_socket in clients.items():
@@ -51,7 +37,6 @@ def broadcast(message, sender_socket=None):
                 print(f"Error al enviar mensaje a {nickname}: {e}")
                 client_socket.close()
                 del clients[nickname]
-                #save_nicknames()  # Guardar estado después de desconexión
 
 # Función para retransmitir la lista de clientes conectados a todos los clientes
 def broadcast_user_list():
@@ -67,7 +52,6 @@ def broadcast_user_list():
             print(f"Error al enviar la lista de usuarios: {e}")
             client_socket.close()
             del clients[client_socket]
-            #save_nicknames()
 
 # Función para manejar las conexiones de los clientes
 def handle_client(client_socket: ssl.SSLSocket, client_address):
@@ -77,7 +61,6 @@ def handle_client(client_socket: ssl.SSLSocket, client_address):
         if nickname not in clients:
             clients[nickname] = client_socket
             print(f"{nickname} se ha conectado.")
-            #save_nicknames()
 
         # Notificar a todos los clientes conectados sobre la nueva conexión
         broadcast(f"{nickname} se ha unido al chat.", sender_socket=None)
@@ -113,7 +96,6 @@ def handle_client(client_socket: ssl.SSLSocket, client_address):
             broadcast_user_list()
         
         client_socket.close()
-        #save_nicknames()
 
 # Generar claves y certificados temporales
 def generate_temp_cert():
@@ -169,7 +151,6 @@ def start_server():
 
     # Cargar los nicknames de los clientes desde el archivo
     global clients
-    #clients = load_nicknames()
 
     # Generar certificado y clave temporal
     if not os.path.exists('temp_server.crt') or not os.path.exists('temp_server.key'):
