@@ -1,6 +1,5 @@
 import socket
 import threading
-import ssl
 import hmac
 import hashlib
 import tkinter as tk
@@ -9,13 +8,13 @@ import time
 
 # Clave secreta compartida entre cliente y servidor para HMAC
 secret_key = b'supersecretkey123'
-secure_client_socket: ssl.SSLSocket = None
+client_socket: socket.socket = None
 nickname: str = ""
 
 # Función para intentar reconectar al servidor
 def reconnect_to_server(add_message_callback: callable) -> None:
     global nickname
-    global secure_client_socket
+    global client_socket
     
     while True:
         try:
@@ -24,20 +23,15 @@ def reconnect_to_server(add_message_callback: callable) -> None:
             port = 5555
 
             # Crear contexto SSL
-            context = ssl.create_default_context()
-            context.check_hostname = False
-            context.verify_mode = ssl.CERT_NONE  # Permitir certificados temporales (autofirmados)
-
             client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            secure_client_socket = context.wrap_socket(client_socket, server_hostname=host)
-            secure_client_socket.connect((host, port))
+            client_socket.connect((host, port))
 
             print("Conexión segura establecida con el servidor.")
             
-            secure_client_socket.send(nickname.encode('utf-8'))
+            client_socket.send(nickname.encode('utf-8'))
 
             # Iniciar un hilo para recibir mensajes
-            threading.Thread(target=receive_messages, args=(secure_client_socket, add_message_callback), daemon=True).start()
+            threading.Thread(target=receive_messages, args=(client_socket, add_message_callback), daemon=True).start()
             
             return
         
@@ -103,11 +97,11 @@ def update_client_list(message, client_listbox):
 
 # Función para manejar el evento de enviar un mensaje
 def send_message(event, entry_field, text_area, add_message_callback: callable):
-    global secure_client_socket
+    global client_socket
     
     message = entry_field.get()
     if message.lower() == "salir":
-        secure_client_socket.close()
+        client_socket.close()
         root.quit()
     else:
         try:
@@ -115,18 +109,15 @@ def send_message(event, entry_field, text_area, add_message_callback: callable):
             update_text_area(f"Tu: {message}", text_area)
             
             hmac_hash = generate_hmac(message)
-            secure_client_socket.send(f"{message}|{hmac_hash}".encode('utf-8'))
+            client_socket.send(f"{message}|{hmac_hash}".encode('utf-8'))
             entry_field.delete(0, tk.END)  # Limpiar el campo de entrada
         except Exception as e:
             print(f"Error al enviar el mensaje: {e}")
-            print("Intentando reconectar...")
-            secure_client_socket.close()
-            reconnect_to_server(add_message_callback)
 
 # Función para iniciar el cliente
 def start_client():
     # Cargar socket global
-    global secure_client_socket
+    global client_socket
     global nickname
 
     # Iniciar una nueva ventana de Tkinter

@@ -1,20 +1,12 @@
 import socket
 import threading
-import ssl
 import hmac
 import hashlib
 import os
-from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives.serialization import Encoding, NoEncryption, PrivateFormat
-import datetime
 
 # Diccionario para manejar los clientes y sus apodos (nicknames)
 clients = {}  # Ahora sólo almacena los nicknames de los clientes
 secret_key = b'supersecretkey123'  # Clave secreta para los HMAC
-nicknames_file = 'nicknames.json'  # Archivo donde se guardan los nicknames de los clientes
 
 # Función para generar un HMAC (hash con clave) de un mensaje
 def generate_hmac(message):
@@ -54,7 +46,7 @@ def broadcast_user_list():
             del clients[client_socket]
 
 # Función para manejar las conexiones de los clientes
-def handle_client(client_socket: ssl.SSLSocket, client_address):
+def handle_client(client_socket, client_address):
     try:
         nickname = client_socket.recv(1024).decode('utf-8')
 
@@ -97,49 +89,6 @@ def handle_client(client_socket: ssl.SSLSocket, client_address):
         
         client_socket.close()
 
-# Generar claves y certificados temporales
-def generate_temp_cert():
-    private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-    )
-
-    subject = issuer = x509.Name([ 
-        x509.NameAttribute(NameOID.COUNTRY_NAME, "US"),
-        x509.NameAttribute(NameOID.STATE_OR_PROVINCE_NAME, "California"),
-        x509.NameAttribute(NameOID.LOCALITY_NAME, "San Francisco"),
-        x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Chat Application"),
-        x509.NameAttribute(NameOID.COMMON_NAME, "localhost"),
-    ])
-
-    certificate = x509.CertificateBuilder().subject_name(
-        subject
-    ).issuer_name(
-        issuer
-    ).public_key(
-        private_key.public_key()
-    ).serial_number(
-        x509.random_serial_number()
-    ).not_valid_before(
-        datetime.datetime.now(datetime.timezone.utc)
-    ).not_valid_after(
-        datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=1)
-    ).sign(private_key, hashes.SHA256())
-
-    # Exportar clave privada y certificado
-    key_pem = private_key.private_bytes(
-        encoding=Encoding.PEM,
-        format=PrivateFormat.TraditionalOpenSSL,
-        encryption_algorithm=NoEncryption(),
-    )
-    cert_pem = certificate.public_bytes(Encoding.PEM)
-
-    # Guardar temporalmente en archivos
-    with open("temp_server.key", "wb") as key_file:
-        key_file.write(key_pem)
-    with open("temp_server.crt", "wb") as cert_file:
-        cert_file.write(cert_pem)
-
 # Iniciar servidor
 def start_server():
     host = '127.0.0.1'
@@ -152,23 +101,13 @@ def start_server():
     # Cargar los nicknames de los clientes desde el archivo
     global clients
 
-    # Generar certificado y clave temporal
-    if not os.path.exists('temp_server.crt') or not os.path.exists('temp_server.key'):
-        generate_temp_cert()
-        print("Certificado y clave temporales generados.")
-
-    # Crear contexto SSL
-    context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    context.load_cert_chain(certfile="temp_server.crt", keyfile="temp_server.key")
-
     print(f"Servidor seguro iniciado en {host}:{port}")
 
     while True:
         try:
             client_socket, addr = server.accept()
-            secure_client_socket = context.wrap_socket(client_socket, server_side=True)
             print(f"Conexión segura desde {addr}")
-            threading.Thread(target=handle_client, args=(secure_client_socket, addr), daemon=True).start()
+            threading.Thread(target=handle_client, args=(client_socket, addr), daemon=True).start()
         except Exception as e:
             print(f"Error al aceptar una nueva conexión: {e}")
         """except KeyboardInterrupt:
