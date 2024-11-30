@@ -1,2 +1,5 @@
 # Ignorar la carpeta venv
 **/venv/
+
+*.key
+*.crt
