@@ -1,0 +1,5 @@
+# Ignorar archivos .zip
+*.zip
+
+# Ignorar la carpeta venv
+venv/
