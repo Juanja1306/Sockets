@@ -72,18 +72,11 @@ def receive_messages(secure_client_socket, add_message_callback: callable):
             if verify_hmac(message, received_hmac):
                 # Mostrar el mensaje en el área de texto
                 add_message_callback(message)
-                # root.after(0, update_text_area, message, text_area)
-                # Si el mensaje contiene la lista de usuarios
-                # if message.startswith("Lista de usuarios:"):
-                    # Actualizar la lista de clientes conectados
-                    # root.after(0, update_client_list, message, client_listbox)
             else:
                 print("Advertencia: Mensaje recibido con HMAC inválido.")
+                
         except Exception as e:
             print(f"Error al recibir mensaje: {e}")
-            break
-        except (socket.error, ssl.SSLError) as e:
-            print(f"Error en la conexión: {e}")
             secure_client_socket.close()
             reconnect_to_server(add_message_callback)
             break
