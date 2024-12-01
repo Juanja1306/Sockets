@@ -1,14 +1,8 @@
-# Sockets
-Sockets usando python de tipo Clientes - Servidor
-
-
-# Secure Chat System
-
-## Descripción del Proyecto
+# Descripción del Proyecto
 
 Este proyecto implementa un sistema de chat seguro basado en sockets TCP y asegura la comunicación entre clientes y servidor mediante HMAC (Hash-Based Message Authentication Code). 
 
-### Componentes principales:
+## Componentes principales:
 
 1. **Servidor de chat**: Coordina las comunicaciones entre los clientes y verifica la autenticidad de los mensajes.
 2. **Cliente de chat**: Proporciona una interfaz gráfica para enviar y recibir mensajes.
