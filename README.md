@@ -1,8 +1,4 @@
-# Sockets
-Sockets usando python de tipo Clientes - Servidor
-
-
-# Proyecto: Chat Grupal en Tiempo Real
+# Sockets: Chat Grupal en Tiempo Real
 
 Este proyecto consiste en el desarrollo de una aplicación de comunicación grupal en tiempo real, implementando sockets TCP para gestionar la comunicación cliente-servidor. Además, se aplicarán técnicas de seguridad y se presentará un informe detallado y un video demostrativo del funcionamiento del sistema.
 
