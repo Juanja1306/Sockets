@@ -21,7 +21,7 @@ El sistema garantiza la integridad y autenticidad de los mensajes mediante el us
 
 Antes de ejecutar el sistema, asegúrate de cumplir con los siguientes requisitos:
 
-- **Python 3.7 o superior** instalado en tu sistema.
+- **Python 3.9 o superior** instalado en tu sistema.
 - Librerías estándar de Python (no se necesitan instalaciones adicionales).
 - Una red local configurada para permitir conexiones en el puerto `5555`.
 
