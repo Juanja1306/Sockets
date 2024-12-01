@@ -28,6 +28,8 @@ Este proyecto consiste en el desarrollo de una aplicación de comunicación grup
 ---
 
 # NOTA
-Esta actividad se desarrollo 2 veriones diferentes.
-   - Python
-   - Node
+Esta actividad se desarrolló en **dos versiones diferentes** utilizando tecnologías distintas:
+
+- **Python**: 
+- **Node.js**: 
+
