@@ -100,7 +100,10 @@ def send_message(event, entry_field, text_area, add_message_callback: callable):
     global client_socket
     
     message = entry_field.get()
-    if message.lower() == "salir":
+    if message =="":
+        print(f"No se puede enviar mensajes vacios")
+        return
+    if message.lower() == "exit":
         client_socket.close()
         root.quit()
     else:
