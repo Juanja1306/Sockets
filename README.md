@@ -25,7 +25,7 @@ Este proyecto consiste en el desarrollo de una aplicación de comunicación grup
    - Las decisiones técnicas tomadas.
    - La implementación y los resultados obtenidos.
 
-#NOTA
+# NOTA
 Esta actividad se desarrollo en 2 tecnologias diferentes.
    - Python
    - Node
