@@ -4,15 +4,15 @@ const chalk = require('chalk'); // Importamos chalk
 const ora = require('ora'); // Importamos ora
 
 // Configuración para cifrado y HMAC
-const ALGORITHM = 'aes-256-cbc';
-const ENCRYPTION_KEY = '11111111111111111111111111111111'; // 32 bits
+const ALG = 'aes-256-cbc';
+const KEY = '11111111111111111111111111111111'; // 32 bits
 const IV = Buffer.from('0000000000000000'); // 16 bits
 const HMAC_SECRET = 'admin123';
 
 // Configuración de reconexión
 const SERVER_HOST = '127.0.0.1';
-const SERVER_PORT = 3000;
-const RECONNECT_INTERVAL = 5000; // Tiempo en milisegundos (5 segundos)
+const SERVER_PORT = 8000;
+const RECONNECT_INTERVAL = 3000; // Tiempo en milisegundos
 
 let client = null;
 let sessionData = { name: null }; // Almacenará los datos de sesión del cliente (como nombre de usuario)
@@ -22,7 +22,7 @@ const spinner = ora('Conectando al servidor...').start();
 
 // Función para cifrar mensajes
 function encryptMessage(message) {
-    const cipher = crypto.createCipheriv(ALGORITHM, ENCRYPTION_KEY, IV);
+    const cipher = crypto.createCipheriv(ALG, KEY, IV);
     let encrypted = cipher.update(message, 'utf8', 'hex');
     encrypted += cipher.final('hex');
     return encrypted;
@@ -61,18 +61,18 @@ function connectToServer() {
             console.log(chalk.bgBlue.white.bold(` ${message} `) + '\n');  // Añadir salto de línea
         } else {
             // Mensajes de otros usuarios
-            console.log(chalk.cyan(`[Mensaje recibido]: ${message}\n`));  // Mensajes con salto de línea
+            console.log(chalk.cyan(`[Recived Message]: ${message}\n`));  // Mensajes con salto de línea
         }
     });
 
     // Manejar errores
     client.on('error', (err) => {
-        spinner.fail(chalk.red('Error de conexión:', err.message));
+        spinner.fail(chalk.red('Error de conexión Servidor fuera de servicio', err.message));
     });
 
     // Manejar cierre de conexión
     client.on('close', () => {
-        console.log(chalk.yellow('\nConexión cerrada.'));
+        console.log(chalk.yellow('\nConexión rechazada.'));
         // Intentar reconectar cada 5 segundos
         setTimeout(connectToServer, RECONNECT_INTERVAL);
     });
@@ -99,7 +99,7 @@ function sendMessage(message) {
     const dataToSend = `${message}|${hmac}`;
     const encryptedMessage = encryptMessage(dataToSend);
     client.write(`${encryptedMessage}|`);
-    console.log(chalk.greenBright(`[Enviado]: ${message}`));  // Mostrar mensaje enviado
+    console.log(chalk.greenBright(`[Sent]: ${message}`));  // Mostrar mensaje enviado
 }
 
 // Función para solicitar un mensaje del usuario
