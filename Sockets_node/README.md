@@ -16,6 +16,18 @@ Esta es una aplicación de chat basada en el protocolo TCP desarrollada en Node.
 
 ---
 
+## **Seguridad**  
+
+**Cifrado** 
+- Los mensajes se cifran usando AES-256-CBC, una técnica de cifrado simétrico. 
+- Clave de cifrado: 11111111111111111111111111111111  
+- Vector de inicialización (IV): 0000000000000000
+**Autenticación** 
+- Cada mensaje lleva un HMAC generado con SHA-256 para asegurar su integridad. 
+- Se utiliza la clave secreta admin123 para generar los HMAC. 
+
+---
+
 ## **Requisitos del Sistema**  
 
 - **Node.js** versión 14.0 o superior.  
@@ -26,10 +38,6 @@ Esta es una aplicación de chat basada en el protocolo TCP desarrollada en Node.
 
 1. **Clona el repositorio:**  
 
-   ```bash
-   git clone https://github.com/tu-usuario/chat-sockets-node.git
-   cd Sockets_node
-
 2. **Instala las dependencias:**
 
    ```bash
@@ -39,31 +47,32 @@ Esta es una aplicación de chat basada en el protocolo TCP desarrollada en Node.
 
 ## **Uso**
 
- 1. **Inicia el servidor**
+1. **Inicia el servidor**
    
      ```bash
      cd server
      node ./server.js
 
- 2. **Inicia un cliente**
+2. **Inicia un cliente**
     
     En otra terminal ejecuta lo siguiente:
    
-       ```bash
-       cd client
-       node ./client.js
+    ```bash
+    cd client
+    node ./client.js
        
 ---
 
 ## **Estructura de Archivos**
    ```bash
-     📂 sockets_node
-    ├── 📂 client 
-    │    └── client.js
-    ├── 📂 server 
-    │    └── server.js
-    ├── package.json
-    ├── README.md
-    └── node_modules/
+    📂 sockets_node
+   ├── 📂 client 
+   │    └── client.js
+   ├── 📂 server 
+   │    └── server.js
+   ├── package.json
+   ├── README.md
+   └── node_modules/
+
 
 
