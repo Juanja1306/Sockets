@@ -27,6 +27,12 @@ Este proyecto consiste en el desarrollo de una aplicación de comunicación grup
 
 ---
 
+# Video Youtube
+
+## **https://youtu.be/JdJh8zY4SvI**
+
+---
+
 # NOTA
 Esta actividad se desarrolló en **dos versiones diferentes** utilizando tecnologías distintas:
 
