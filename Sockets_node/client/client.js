@@ -61,7 +61,7 @@ function connectToServer() {
             console.log(chalk.bgBlue.white.bold(` ${message} `) + '\n');  // Añadir salto de línea
         } else {
             // Mensajes de otros usuarios
-            console.log(chalk.cyan(`[Recived Message]: ${message}\n`));  // Mensajes con salto de línea
+            console.log(chalk.cyan(`[Mensaje Recivido]: ${message}\n`));  // Mensajes con salto de línea
         }
     });
 
@@ -99,7 +99,7 @@ function sendMessage(message) {
     const dataToSend = `${message}|${hmac}`;
     const encryptedMessage = encryptMessage(dataToSend);
     client.write(`${encryptedMessage}|`);
-    console.log(chalk.greenBright(`[Sent]: ${message}`));  // Mostrar mensaje enviado
+    console.log(chalk.greenBright(`[Enviado]: ${message}`));  // Mostrar mensaje enviado
 }
 
 // Función para solicitar un mensaje del usuario
